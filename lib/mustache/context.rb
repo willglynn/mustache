@@ -114,7 +114,23 @@ class Mustache
         next if frame == self
 
         value = find(frame, name, :__missing)
-        return value if value != :__missing
+        
+        # 1.0.2 has:
+        # return value if value != :__missing
+        
+        # this causes:
+        # warning: Comparable#== will no more rescue exceptions of #<=> in the next release.
+        # warning: Return nil in #<=> if the comparison is inappropriate or avoid such comparison.
+        
+        # see if value <=> Symbol throws an exception
+        begin
+          value <=> :__missing
+        rescue
+          $stderr.puts "warning: #{value.class.to_s} <=> Symbol raised an exception (#{$!.class.to_s}): #{$!}"
+          $stderr.puts $!.backtrace.join("\n")
+          $stderr.puts "value.inspect: #{value.inspect}"
+        end
+        return value if :__missing != value
       end
 
       if default == :__raise || mustache_in_stack.raise_on_context_miss?
